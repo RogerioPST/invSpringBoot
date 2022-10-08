@@ -29,6 +29,12 @@ public interface ProventoRepository extends JpaRepository<Provento, Long>{
 	//@Query(value = "SELECT EXTRACT (month FROM p.data) as date from Provento p")
 	List<ProventoMesDTO> findProventoPorMes();
 
+	@Query(value = "SELECT p from Provento p order by p.data asc")
+	//@Query(value = "SELECT new br.rogerio.backend.dto.ProventoMesDTO(sum(p.valor),extract(month  from p.data) as n )   from Provento p group by n")
+	//@Query(value = "SELECT EXTRACT (month FROM p.data) as date from Provento p")
+	List<Provento> findProventoPorMesMapping();
+	
+
 	@Query(value = "SELECT new br.rogerio.backend.dto.ProventoAnoMesDTO(year(p.data) as ano, substring(p.data, 1, 7) as anoMes, sum(p.valor) ) " +
 	"from Provento p group by ano, anoMes order by p.data asc")
 	//@Query(value = "SELECT new br.rogerio.backend.dto.ProventoMesDTO(sum(p.valor),extract(month  from p.data) as n )   from Provento p group by n")
