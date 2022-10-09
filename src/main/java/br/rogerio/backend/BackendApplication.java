@@ -120,7 +120,7 @@ public class BackendApplication {
 
 			Pregao p2 = new Pregao();
 			p2.setUsuario(u);						
-			p2.setData(SDF.parse("2022-02-30"));			
+			p2.setData(SDF.parse("2022-02-27"));			
 			p2.setComprasAVista(BigDecimal.valueOf(47723.04));
 			p2.setVendasAVista(BigDecimal.valueOf(0));
 			p2.setValorOperacoes(BigDecimal.valueOf(47723.04));
@@ -136,6 +136,24 @@ public class BackendApplication {
 			p2.setValorLiquidoPara(BigDecimal.valueOf(47799.10));			
 			pregaoRepository.save(p2);
 
+			Pregao p3 = new Pregao();
+			p3.setUsuario(u);						
+			p3.setData(SDF.parse("2022-01-11"));			
+			p3.setComprasAVista(BigDecimal.valueOf(47723.04));
+			p3.setVendasAVista(BigDecimal.valueOf(0));
+			p3.setValorOperacoes(BigDecimal.valueOf(47723.04));
+			p3.setValorLiquidoOperacoes(BigDecimal.valueOf(47723.04));
+			p3.setTaxaLiquidacao(BigDecimal.valueOf(11.93));
+			p3.setTotalCblc(BigDecimal.valueOf(47734.97));			
+			p3.setEmolumentos(BigDecimal.valueOf(2.38));			
+			p3.setTaxaOperacional(BigDecimal.valueOf(53.90));			
+			p3.setImpostos(BigDecimal.valueOf(5.75));			
+			p3.setOutros(BigDecimal.valueOf(2.10));			
+			p3.setTotalCustosDespesas(BigDecimal.valueOf(61.75));			
+			p3.setDataLiquidoPara(SDF.parse("2022-01-13"));			
+			p3.setValorLiquidoPara(BigDecimal.valueOf(47799.10));			
+			pregaoRepository.save(p3);
+
 			
 			MovimentacaoPregao mp = new MovimentacaoPregao();
 			mp.setPregao(p);					
@@ -145,6 +163,7 @@ public class BackendApplication {
 			mp.setValorOperacao(BigDecimal.valueOf(259.92));
 			mp.setTipoMovimentacao(tm);	
 			movimentacaoPregaoRepository.save(mp);
+
 			MovimentacaoPregao mp3 = new MovimentacaoPregao();
 			mp3.setPregao(p);					
 			mp3.setAtivo(bbas3);	
@@ -153,6 +172,15 @@ public class BackendApplication {
 			mp3.setValorOperacao(BigDecimal.valueOf(28.88));
 			mp3.setTipoMovimentacao(tm);	
 			movimentacaoPregaoRepository.save(mp3);
+
+			MovimentacaoPregao mp4 = new MovimentacaoPregao();
+			mp4.setPregao(p3);					
+			mp4.setAtivo(bbas3);	
+			mp4.setQuantidade(500);
+			mp4.setPreco(BigDecimal.valueOf(28.87));
+			mp4.setValorOperacao(BigDecimal.valueOf(14439.32));
+			mp4.setTipoMovimentacao(tm);	
+			movimentacaoPregaoRepository.save(mp4);
 
 			MovimentacaoPregao mpPregao2 = new MovimentacaoPregao();
 			mpPregao2.setPregao(p2);					

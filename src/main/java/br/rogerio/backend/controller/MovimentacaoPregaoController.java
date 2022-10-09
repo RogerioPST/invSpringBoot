@@ -2,6 +2,7 @@ package br.rogerio.backend.controller;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DateFormat;
 import java.text.ParseException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.Query;
@@ -9,10 +10,14 @@ import org.springframework.data.jpa.repository.Query;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,9 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.rogerio.backend.dto.AtivoQuantidadeTotalDTO;
 import br.rogerio.backend.dto.MovimentacaoPorAtivoDTO;
+import br.rogerio.backend.dto.MovimentacaoPorAtivoPregaoDTO;
 import br.rogerio.backend.dto.MovimentacaoTotalPorAtivoPregaoDTO;
 import br.rogerio.backend.dto.MovimentacoesDTO;
+import br.rogerio.backend.dto.MovimentacoesPregaoDTO;
 import br.rogerio.backend.dto.ResumoPorAtivoDTO;
+import br.rogerio.backend.dto.ResumoPorAtivoPregaoDTO;
 import br.rogerio.backend.dto.StatsDTO;
 import br.rogerio.backend.model.MovimentacaoPregao;
 import br.rogerio.backend.model.Pregao;
@@ -36,6 +44,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequestMapping("/api/movimentacao_pregao")
 @AllArgsConstructor //com isso, n precisa do construtor inicializando/injecao de dependencia do usuarioRepository
 public class MovimentacaoPregaoController {
+
+	private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 
 	private final MovimentacaoPregaoRepository movimentacaoPregaoRepository;			
 	private final PregaoRepository pregaoRepository;			
@@ -67,6 +77,91 @@ public class MovimentacaoPregaoController {
 		return movimentacaoPregaoRepository.findMovimentacaoPorAtivoq();	
 	}
 
+	@GetMapping
+	@RequestMapping("/mapping")
+	public List<MovimentacoesDTO> findMovimentacaoPorAtivoMapping(){
+		List<MovimentacaoPorAtivoDTO> movimentacoesAtivo = this.findMovimentacaoPorAtivo1();
+
+		TreeMap<String, List<MovimentacaoPorAtivoDTO>> mapaDTO = movimentacoesAtivo.stream()
+		.collect(Collectors.groupingBy(MovimentacaoPorAtivoDTO::getDiaAtivo,TreeMap::new, Collectors.toList()));
+
+/* 
+		BigDecimal proporcaoValorAtivoNaNotaTaxa = devolveOValorDaProporcaoDaNota(movDTO, totalAtivoNotaDTO.getTotal());
+		BigDecimal totalTaxaLiquidacaoPorAtivoPregao = pregao.getTaxaLiquidacao().multiply(proporcaoValorAtivoNaNotaTaxa);
+		BigDecimal totalEmolumentosPorAtivoPregao = pregao.getEmolumentos().multiply(proporcaoValorAtivoNaNotaTaxa);
+		BigDecimal totalOutrasTaxasComOperacional = pregao.getTaxaOperacional().add(pregao.getOutros());
+		BigDecimal totalOutrasTaxasPorAtivoPregao = totalOutrasTaxasComOperacional.multiply(proporcaoValorAtivoNaNotaTaxa);								
+		
+		List<MovimentacaoPorAtivoDTO> unmodifiableList = List.copyOf(listaExistente);					
+		ResumoPorAtivoDTO resumo = new ResumoPorAtivoDTO(ativo, totalOutrasTaxasPorAtivoPregao, totalEmolumentosPorAtivoPregao,
+		totalTaxaLiquidacaoPorAtivoPregao, totalAtivoNotaDTO.getTotal(), unmodifiableList  );	
+ */
+
+
+		BigDecimal z = BigDecimal.ZERO;
+		List<ResumoPorAtivoDTO> resumos = mapaDTO.entrySet().stream().map( 
+		mapa -> new ResumoPorAtivoDTO(mapa.getKey(), z,z,z,z, mapa.getValue()))
+		.collect(Collectors.toList());		
+
+		Stream<ResumoPorAtivoDTO> streamResumo = resumos.stream();
+		Map<String, List<ResumoPorAtivoDTO>> mapaResumo = streamResumo.collect(Collectors.groupingBy(p -> p.getAtivo().substring(0,10)));
+
+		List<MovimentacoesDTO> movs = mapaResumo.entrySet().stream().map( 
+			mapa -> {
+				Date date = null;
+				try {
+					date =  SDF.parse(mapa.getKey());
+				} catch (ParseException e) {					
+					e.printStackTrace();
+				}								
+				return new MovimentacoesDTO(date
+			,resumos.stream().filter(c -> c.getAtivo().substring(0,10).equals(mapa.getKey()))
+			.collect(Collectors.toList()));
+			})
+			.collect(Collectors.toList());		
+
+		return	movs.stream().sorted(Comparator.comparing(
+				MovimentacoesDTO::getDia)).collect(Collectors.toList());
+		
+	}
+	
+	@GetMapping
+	@RequestMapping("/mapping-pregao")
+	public List<MovimentacoesPregaoDTO> findMovimentacaoPorAtivoMappingPorPregao(){
+		List<MovimentacaoPorAtivoPregaoDTO> movimentacoesAtivo = movimentacaoPregaoRepository.findMovimentacaoPorAtivoPregao();
+
+		TreeMap<String, List<MovimentacaoPorAtivoPregaoDTO>> mapaDTO = movimentacoesAtivo.stream()
+		.collect(Collectors.groupingBy(MovimentacaoPorAtivoPregaoDTO::getDiaAtivo,TreeMap::new, Collectors.toList()));
+
+		BigDecimal z = BigDecimal.ZERO;
+		List<ResumoPorAtivoPregaoDTO> resumos = mapaDTO.entrySet().stream().map( 
+		mapa -> new ResumoPorAtivoPregaoDTO(mapa.getKey(), z,z,z,z, mapa.getValue()))
+		.collect(Collectors.toList());		
+
+		Stream<ResumoPorAtivoPregaoDTO> streamResumo = resumos.stream();
+		Map<String, List<ResumoPorAtivoPregaoDTO>> mapaResumo = streamResumo.collect(Collectors.groupingBy(p -> p.getAtivo().substring(0,10)));
+
+
+
+		List<MovimentacoesPregaoDTO> movs = mapaResumo.entrySet().stream().map( 
+			mapa -> {
+				Date date = null;
+				try {
+					date =  SDF.parse(mapa.getKey());
+				} catch (ParseException e) {					
+					e.printStackTrace();
+				}								
+				
+				Pregao pregao = pregaoRepository.findByData(date);
+				return new MovimentacoesPregaoDTO(pregao
+			,resumos.stream().filter(c -> c.getAtivo().substring(0,10).equals(mapa.getKey()))
+			.collect(Collectors.toList()));
+			})
+			.collect(Collectors.toList());		
+
+		return	movs.stream().sorted(Comparator.comparing(l->l.getPregao().getData())).collect(Collectors.toList());				
+	}
+
 
 	@GetMapping
 	@RequestMapping("/ativo")
@@ -84,7 +179,7 @@ public class MovimentacaoPregaoController {
 		List<MovimentacaoPorAtivoDTO> listaExistente = new ArrayList<>();					
 		List<ResumoPorAtivoDTO> listaExistenteResumo = new ArrayList<>();
 
-		int quantidadeDeCadaAtivo = 0;
+		int quantidadeDeCadaAtivo = 0;					
 
 		for (MovimentacaoPorAtivoDTO movDTO : movimentacoesAtivo){			
 			
@@ -120,6 +215,8 @@ public class MovimentacaoPregaoController {
 					resumos.add(resumo);
 					listaExistente.clear();								
 				} 			
+
+				
 			
 	 		if (mapaResumoAtivoPregao.get(pregao.getData()) == null) {
 				List<ResumoPorAtivoDTO> copyOf = List.copyOf(listaExistenteResumo);

@@ -8,10 +8,9 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class MovimentacaoPorAtivoDTO {	
+public class MovimentacaoPorAtivoPregaoDTO {	
 
-	private String diaAtivo;
-	private Pregao pregao;
+	private String diaAtivo;	
 	private String operacao;
 	private String ativo;	
 
@@ -21,16 +20,13 @@ public class MovimentacaoPorAtivoDTO {
 	
 	private BigDecimal valorOperacao;
 
-	public MovimentacaoPorAtivoDTO(String diaAtivo, Pregao pregao, String operacao, String ativo, int quantidade,
+	public MovimentacaoPorAtivoPregaoDTO(String diaAtivo, String operacao, String ativo, int quantidade,
 			BigDecimal preco, BigDecimal valorOperacao) {
-		this.diaAtivo = diaAtivo;
-		this.pregao = pregao;
+		this.diaAtivo = diaAtivo;		
 		this.operacao = operacao;
 		this.ativo = ativo;
 		this.quantidade = quantidade;
 		this.preco = preco;
 		this.valorOperacao = valorOperacao;
-	}					
-
-	
+	}						
 }

@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ResumoPorAtivoDTO {
+public class ResumoPorAtivoPregaoDTO {
 
 	private String ativo;
 
@@ -20,11 +20,11 @@ public class ResumoPorAtivoDTO {
 
 	private BigDecimal valorOperacaoTotal;
 
-	private List<MovimentacaoPorAtivoDTO> movimentacoesPorAtivo;
+	private List<MovimentacaoPorAtivoPregaoDTO> movimentacoesPorAtivo;
 	
-	public ResumoPorAtivoDTO(String ativo, BigDecimal valorOutrasTaxas, BigDecimal valorTaxasEmolumentos,
+	public ResumoPorAtivoPregaoDTO(String ativo, BigDecimal valorOutrasTaxas, BigDecimal valorTaxasEmolumentos,
 			BigDecimal valorTaxaLiquidacao, BigDecimal valorOperacaoTotal,
-			List<MovimentacaoPorAtivoDTO> movimentacoesPorAtivo) {
+			List<MovimentacaoPorAtivoPregaoDTO> movimentacoesPorAtivo) {
 		this.ativo = ativo;
 		this.valorOutrasTaxas = valorOutrasTaxas;
 		this.valorTaxasEmolumentos = valorTaxasEmolumentos;

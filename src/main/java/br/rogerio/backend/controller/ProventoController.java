@@ -187,8 +187,8 @@ public class ProventoController {
 
 		List<ProventoMesDTO> meses1 = proventoRepository.findProventoPorMes();	
 		Stream<ProventoMesDTO> anosReverso = meses1.stream().sorted(Comparator.comparing(
-		ProventoMesDTO::getAnoMes, (s1, s2) -> { return s1.substring(0,4)
-		.compareTo(s2.substring(0,4));}).reversed());														
+		ProventoMesDTO::getAnoMes, (s1, s2) -> 
+		s1.substring(0,4).compareTo(s2.substring(0,4))).reversed());														
 		TreeMap<String, List<ProventoMesDTO>> mapasAnosDTO = anosReverso.collect(Collectors.groupingBy(p -> p.getAnoMes()
 		.substring(0,4), () -> new TreeMap<String, List<ProventoMesDTO>>(Comparator.reverseOrder()), Collectors.toList()));									
 
@@ -199,6 +199,7 @@ public class ProventoController {
 
 		Stream<List<ProventoMesDTO>> streamLista = anos.stream().map(ProventoAnoDTO::getMeses);
 
+		//streamLista.flatMap(List::stream) -> transforma em stream a partir de list
 		BigDecimal total = streamLista.flatMap(List::stream).map(ProventoMesDTO::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		return 	new TotalProventoDTO( total, anos);
