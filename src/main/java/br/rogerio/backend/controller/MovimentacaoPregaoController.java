@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.text.ParseException;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.Query;
 
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.rogerio.backend.dto.AtivoQuantidadeTotalDTO;
+import br.rogerio.backend.dto.AtivoQuantidadeTotalPregaoDTO;
 import br.rogerio.backend.dto.MovimentacaoPorAtivoDTO;
 import br.rogerio.backend.dto.MovimentacaoPorAtivoPregaoDTO;
 import br.rogerio.backend.dto.MovimentacaoTotalPorAtivoPregaoDTO;
@@ -125,23 +129,53 @@ public class MovimentacaoPregaoController {
 		
 	}
 	
+	//esse eh o ultimo e mais correto - 08/10/2022
 	@GetMapping
 	@RequestMapping("/mapping-pregao")
 	public List<MovimentacoesPregaoDTO> findMovimentacaoPorAtivoMappingPorPregao(){
 		List<MovimentacaoPorAtivoPregaoDTO> movimentacoesAtivo = movimentacaoPregaoRepository.findMovimentacaoPorAtivoPregao();
 
 		TreeMap<String, List<MovimentacaoPorAtivoPregaoDTO>> mapaDTO = movimentacoesAtivo.stream()
-		.collect(Collectors.groupingBy(MovimentacaoPorAtivoPregaoDTO::getDiaAtivo,TreeMap::new, Collectors.toList()));
-
-		BigDecimal z = BigDecimal.ZERO;
+		.collect(Collectors.groupingBy(MovimentacaoPorAtivoPregaoDTO::getDiaAtivo,TreeMap::new, Collectors.toList()));			 						
+		
 		List<ResumoPorAtivoPregaoDTO> resumos = mapaDTO.entrySet().stream().map( 
-		mapa -> new ResumoPorAtivoPregaoDTO(mapa.getKey(), z,z,z,z, mapa.getValue()))
-		.collect(Collectors.toList());		
+			mapa -> {
+				Date date = null;
+				try {
+					date =  SDF.parse(mapa.getKey().substring(0,10));
+				} catch (ParseException e) {					
+					e.printStackTrace();
+				}							
+				String ativo = mapa.getKey().substring(10,15);
+				Pregao pregao = pregaoRepository.findByData(date);				
+				//to do - precisa ver o q fazer qdo tiver pregao de outra corretora e calcular
+				List<AtivoQuantidadeTotalPregaoDTO> totalAtivoNotaDTO = movimentacaoPregaoRepository.findTotalAtivoNotaMovimentacao(pregao, ativo);								
+				BigDecimal proporcaoValorAtivoNaNotaTaxa = BigDecimal.ZERO;
+				BigDecimal totalAtivoNotaResumo	= BigDecimal.ZERO;
+
+				if (totalAtivoNotaDTO.size() > 1){
+					//to do - precisa ver o q fazer no daytrade e calcular
+
+					//imagino q precisa pegar o total da compra e de venda, ver qual eh maior e colocar a diferença e operacao do maior no metodo abaixo
+					proporcaoValorAtivoNaNotaTaxa = devolveOValorDaProporcaoDaNotaPregao(pregao, totalAtivoNotaDTO.get(0).getOperacao(), totalAtivoNotaDTO.get(0).getTotal());
+					totalAtivoNotaResumo				 = totalAtivoNotaDTO.get(0).getTotal();						
+				} else{
+					proporcaoValorAtivoNaNotaTaxa = devolveOValorDaProporcaoDaNotaPregao(pregao, totalAtivoNotaDTO.get(0).getOperacao(), totalAtivoNotaDTO.get(0).getTotal());
+					totalAtivoNotaResumo				 = totalAtivoNotaDTO.get(0).getTotal();						
+				}
+				BigDecimal totalTaxaLiquidacaoPorAtivoPregao = pregao.getTaxaLiquidacao().multiply(proporcaoValorAtivoNaNotaTaxa);
+				BigDecimal totalEmolumentosPorAtivoPregao = pregao.getEmolumentos().multiply(proporcaoValorAtivoNaNotaTaxa);
+				BigDecimal totalOutrasTaxasComOperacional = pregao.getTaxaOperacional().add(pregao.getOutros());
+				BigDecimal totalOutrasTaxasPorAtivoPregao = totalOutrasTaxasComOperacional.multiply(proporcaoValorAtivoNaNotaTaxa);		
+
+				return new ResumoPorAtivoPregaoDTO(mapa.getKey(), totalOutrasTaxasPorAtivoPregao, totalEmolumentosPorAtivoPregao,
+					totalTaxaLiquidacaoPorAtivoPregao, totalAtivoNotaResumo, mapa.getValue());
+			})
+			.collect(Collectors.toList());		
 
 		Stream<ResumoPorAtivoPregaoDTO> streamResumo = resumos.stream();
-		Map<String, List<ResumoPorAtivoPregaoDTO>> mapaResumo = streamResumo.collect(Collectors.groupingBy(p -> p.getAtivo().substring(0,10)));
-
-
+		Map<String, List<ResumoPorAtivoPregaoDTO>> mapaResumo = streamResumo
+			.collect(Collectors.groupingBy(p -> p.getDiaAtivo().substring(0,10)));
 
 		List<MovimentacoesPregaoDTO> movs = mapaResumo.entrySet().stream().map( 
 			mapa -> {
@@ -154,7 +188,7 @@ public class MovimentacaoPregaoController {
 				
 				Pregao pregao = pregaoRepository.findByData(date);
 				return new MovimentacoesPregaoDTO(pregao
-			,resumos.stream().filter(c -> c.getAtivo().substring(0,10).equals(mapa.getKey()))
+			,resumos.stream().filter(c -> c.getDiaAtivo().substring(0,10).equals(mapa.getKey()))
 			.collect(Collectors.toList()));
 			})
 			.collect(Collectors.toList());		
@@ -281,5 +315,18 @@ public class MovimentacaoPregaoController {
 		return proporcaoNegocioAtivoNaNota;
 }
 
-	
+	private BigDecimal devolveOValorDaProporcaoDaNotaPregao(Pregao nota, String operacao, BigDecimal valorAcumuladoOperacaoDeCadaAtivo) {
+		
+		BigDecimal proporcaoNegocioAtivoNaNota = BigDecimal.ZERO;
+		if ( nota.getVendasAVista().compareTo(nota.getComprasAVista()) > 0) {
+			if (operacao.equals("VENDA")) {
+				proporcaoNegocioAtivoNaNota = valorAcumuladoOperacaoDeCadaAtivo.divide(nota.getVendasAVista(), 2, RoundingMode.HALF_UP);
+			}
+		} else if  (nota.getVendasAVista().compareTo(nota.getComprasAVista()) <= 0){
+			if (operacao.equals("COMPRA")) {
+				proporcaoNegocioAtivoNaNota = valorAcumuladoOperacaoDeCadaAtivo.divide(nota.getComprasAVista(), 2, RoundingMode.HALF_UP);
+			}
+		}
+		return proporcaoNegocioAtivoNaNota;
+	}	
 }

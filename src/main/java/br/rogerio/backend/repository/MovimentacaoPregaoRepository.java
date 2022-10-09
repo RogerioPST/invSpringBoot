@@ -5,11 +5,14 @@ package br.rogerio.backend.repository;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import br.rogerio.backend.dto.AtivoQuantidadeTotalDTO;
+import br.rogerio.backend.dto.AtivoQuantidadeTotalPregaoDTO;
 import br.rogerio.backend.dto.MovimentacaoPorAtivoDTO;
 import br.rogerio.backend.dto.MovimentacaoPorAtivoPregaoDTO;
 import br.rogerio.backend.dto.MovimentacaoTotalPorAtivoPregaoDTO;
@@ -49,4 +52,13 @@ public interface MovimentacaoPregaoRepository extends CrudRepository<Movimentaca
 	@Query(value = "SELECT new br.rogerio.backend.dto.AtivoQuantidadeTotalDTO(m.pregao, m.ativo.nome, sum(m.valorOperacao), sum(m.quantidade))  " +
 	"from MovimentacaoPregao m where m.pregao = :pregao and m.ativo.nome = :ativo order by m.pregao, m.ativo.nome")	
 	AtivoQuantidadeTotalDTO findTotalAtivoNota(Pregao pregao, String ativo);	
+
+	@Query(value = "SELECT new br.rogerio.backend.dto.AtivoQuantidadeTotalPregaoDTO(m.pregao, m.ativo.nome, sum(m.valorOperacao), sum(m.quantidade), m.tipoMovimentacao.nome)  " +
+	"from MovimentacaoPregao m where m.pregao = :pregao and m.ativo.nome = :ativo group by m.tipoMovimentacao.nome order by m.pregao, m.ativo.nome")	
+	List<AtivoQuantidadeTotalPregaoDTO> findTotalAtivoNotaMovimentacao(Pregao pregao, String ativo);	
+
+	@Query(value = "SELECT new br.rogerio.backend.dto.MovimentacaoPorAtivoPregaoDTO(CONCAT(m.pregao.data, m.ativo.nome), m.tipoMovimentacao.nome, m.ativo.nome, " +
+	"m.quantidade, m.preco, m.valorOperacao ) " +
+	"from MovimentacaoPregao m where m.pregao = :pregao and m.ativo.nome = :ativo group by m.pregao, m.ativo.nome, m.tipoMovimentacao.nome, m.quantidade order by m.pregao.data asc ")	
+	List<MovimentacaoPorAtivoPregaoDTO> findTotalAtivoNotaPregao( Pregao pregao, String ativo);	
 }

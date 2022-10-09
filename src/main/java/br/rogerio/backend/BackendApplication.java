@@ -182,6 +182,15 @@ public class BackendApplication {
 			mp4.setTipoMovimentacao(tm);	
 			movimentacaoPregaoRepository.save(mp4);
 
+			MovimentacaoPregao mp5 = new MovimentacaoPregao();
+			mp5.setPregao(p3);					
+			mp5.setAtivo(bbas3);	
+			mp5.setQuantidade(500);
+			mp5.setPreco(BigDecimal.valueOf(28.87));
+			mp5.setValorOperacao(BigDecimal.valueOf(14439.32));
+			mp5.setTipoMovimentacao(tm2);	
+			movimentacaoPregaoRepository.save(mp5);
+
 			MovimentacaoPregao mpPregao2 = new MovimentacaoPregao();
 			mpPregao2.setPregao(p2);					
 			mpPregao2.setAtivo(a);	
